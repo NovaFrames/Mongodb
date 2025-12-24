@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { generateTextWithReasoning } from '../TextGeneratorModal/TextGeneratorModal';
 
 const Generator = ({ onGenerateSuccess }) => {
     const [prompt, setPrompt] = useState('');
@@ -7,6 +8,9 @@ const Generator = ({ onGenerateSuccess }) => {
     const [style, setStyle] = useState('Realistic');
     const [textResponse, setTextResponse] = useState('');
     const [textLoading, setTextLoading] = useState(false);
+    const [aiResponse, setAiResponse] = useState(null);
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiError, setAiError] = useState(null);
 
     const handleGenerate = async () => {
         if (!prompt) return;
@@ -59,6 +63,23 @@ const Generator = ({ onGenerateSuccess }) => {
         }
     };
 
+    const handleGenerateAI = async () => {
+        if (!prompt) return;
+        setAiLoading(true);
+        setAiError(null);
+        setAiResponse(null);
+
+        try {
+            const result = await generateTextWithReasoning(prompt);
+            setAiResponse(result);
+        } catch (error) {
+            setAiError(error.message || 'An error occurred while generating AI text');
+            console.error("AI generation failed", error);
+        } finally {
+            setAiLoading(false);
+        }
+    };
+
     return (
         <div className="container" style={{ maxWidth: '800px', marginBottom: '80px' }}>
             <div className="glass-panel" style={{ padding: '32px' }}>
@@ -101,7 +122,7 @@ const Generator = ({ onGenerateSuccess }) => {
                             <option value="Oil Painting">Oil Painting</option>
                         </select>
 
-                        <div style={{ display: 'flex', gap: '12px' }}>
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                             <button
                                 className="btn-primary"
                                 onClick={handleGenerate}
@@ -112,14 +133,30 @@ const Generator = ({ onGenerateSuccess }) => {
                             </button>
                             <button
                                 className="btn-primary"
-                                onClick={handleGenerateText}
-                                disabled={textLoading || !prompt}
+                                onClick={handleGenerateAI}
+                                disabled={aiLoading || !prompt}
                                 style={{ minWidth: '140px' }}
                             >
-                                {textLoading ? 'Thinking...' : 'Generate Text'}
+                                {aiLoading ? 'AI Thinking...' : 'Generate AI'}
                             </button>
                         </div>
                     </div>
+
+                    {/* Error Display */}
+                    {aiError && (
+                        <div style={{
+                            padding: '16px',
+                            borderRadius: 'var(--radius-sm)',
+                            border: '1px solid rgba(239, 68, 68, 0.5)',
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            color: '#fca5a5',
+                            marginTop: '16px',
+                        }}>
+                            <strong>Error:</strong> {aiError}
+                        </div>
+                    )}
+
+                    {/* Original Text Response */}
                     {textResponse && (
                         <div style={{
                             padding: '16px',
@@ -128,8 +165,50 @@ const Generator = ({ onGenerateSuccess }) => {
                             background: 'rgba(0,0,0,0.35)',
                             color: 'var(--text-main)',
                             lineHeight: 1.5,
+                            marginTop: '16px',
                         }}>
+                            <strong style={{ display: 'block', marginBottom: '8px', color: '#a78bfa' }}>Text Response:</strong>
                             {textResponse}
+                        </div>
+                    )}
+
+                    {/* AI Response with Reasoning */}
+                    {aiResponse && (
+                        <div style={{
+                            marginTop: '16px',
+                            padding: '20px',
+                            borderRadius: 'var(--radius-sm)',
+                            border: '1px solid rgba(102, 126, 234, 0.5)',
+                            background: 'rgba(102, 126, 234, 0.1)',
+                        }}>
+                            <h3 style={{
+                                margin: '0 0 16px 0',
+                                color: '#a78bfa',
+                                fontSize: '1.2rem',
+                                fontWeight: '600',
+                            }}>
+                                AI Response with Reasoning
+                            </h3>
+
+                            {/* Content */}
+                            <div style={{
+                                padding: '16px',
+                                borderRadius: 'var(--radius-sm)',
+                                background: 'rgba(0,0,0,0.3)',
+                                marginBottom: '16px',
+                            }}>
+                                <strong style={{ display: 'block', marginBottom: '8px', color: '#c4b5fd' }}>
+                                    Content:
+                                </strong>
+                                <p style={{
+                                    margin: 0,
+                                    color: 'var(--text-main)',
+                                    lineHeight: 1.6,
+                                    whiteSpace: 'pre-wrap',
+                                }}>
+                                    {aiResponse.content}
+                                </p>
+                            </div>
                         </div>
                     )}
                 </div>
