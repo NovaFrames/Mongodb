@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { generateTextWithReasoning } from '../TextGeneratorModal/TextGeneratorModal';
 
 const Generator = ({ onGenerateSuccess }) => {
@@ -200,14 +202,14 @@ const Generator = ({ onGenerateSuccess }) => {
                                 <strong style={{ display: 'block', marginBottom: '8px', color: '#c4b5fd' }}>
                                     Content:
                                 </strong>
-                                <p style={{
-                                    margin: 0,
+                                <div style={{
                                     color: 'var(--text-main)',
                                     lineHeight: 1.6,
-                                    whiteSpace: 'pre-wrap',
-                                }}>
-                                    {aiResponse.content}
-                                </p>
+                                }} className="markdown-content">
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                        {aiResponse.content}
+                                    </ReactMarkdown>
+                                </div>
                             </div>
                         </div>
                     )}
