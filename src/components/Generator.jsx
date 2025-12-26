@@ -3,6 +3,7 @@ import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { generateTextWithReasoning } from '../TextGeneratorModal/TextGeneratorModal';
+import { generateImage } from '../ImageGenerationModal/ImageGenerationModal';
 
 const Generator = ({ onGenerateSuccess }) => {
     const [prompt, setPrompt] = useState('');
@@ -13,30 +14,29 @@ const Generator = ({ onGenerateSuccess }) => {
     const [aiResponse, setAiResponse] = useState(null);
     const [aiLoading, setAiLoading] = useState(false);
     const [aiError, setAiError] = useState(null);
+    const [imageResponse, setImageResponse] = useState(null);
+    const [imageLoading, setImageLoading] = useState(false);
+    const [imageError, setImageError] = useState(null);
 
     const handleGenerate = async () => {
         if (!prompt) return;
-        setLoading(true);
+        setImageLoading(true);
+        setImageError(null);
+        setImageResponse(null);
+
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.post(
-                'http://localhost:5000/api/prompts/generate',
-                {
-                    prompt,
-                    style,
-                },
-                {
-                    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-                }
-            );
-            if (response.data.success) {
-                onGenerateSuccess(response.data.data);
-                setPrompt('');
+            const result = await generateImage(prompt);
+
+            if (result.success) {
+                setImageResponse(result);
+            } else {
+                setImageError(result.error);
             }
         } catch (error) {
-            console.error("Generation failed", error);
+            setImageError(error.message || 'An error occurred while generating images');
+            console.error("Image generation failed", error);
         } finally {
-            setLoading(false);
+            setImageLoading(false);
         }
     };
 
@@ -128,10 +128,10 @@ const Generator = ({ onGenerateSuccess }) => {
                             <button
                                 className="btn-primary"
                                 onClick={handleGenerate}
-                                disabled={loading || !prompt}
+                                disabled={imageLoading || !prompt}
                                 style={{ minWidth: '140px' }}
                             >
-                                {loading ? 'Dreaming...' : 'Generate'}
+                                {imageLoading ? 'Generating...' : 'Generate Image'}
                             </button>
                             <button
                                 className="btn-primary"
@@ -139,12 +139,70 @@ const Generator = ({ onGenerateSuccess }) => {
                                 disabled={aiLoading || !prompt}
                                 style={{ minWidth: '140px' }}
                             >
-                                {aiLoading ? 'AI Thinking...' : 'Generate AI'}
+                                {aiLoading ? 'AI Thinking...' : 'Generate Text'}
                             </button>
                         </div>
                     </div>
 
-                    {/* Error Display */}
+                    {/* Image Error Display */}
+                    {imageError && (
+                        <div style={{
+                            padding: '16px',
+                            borderRadius: 'var(--radius-sm)',
+                            border: '1px solid rgba(239, 68, 68, 0.5)',
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            color: '#fca5a5',
+                            marginTop: '16px',
+                        }}>
+                            <strong>Error:</strong> {imageError}
+                        </div>
+                    )}
+
+                    {/* Image Response Display */}
+                    {imageResponse && imageResponse.images && imageResponse.images.length > 0 && (
+                        <div style={{
+                            marginTop: '16px',
+                            padding: '20px',
+                            borderRadius: 'var(--radius-sm)',
+                            border: '1px solid rgba(139, 92, 246, 0.5)',
+                            background: 'rgba(139, 92, 246, 0.1)',
+                        }}>
+                            <h3 style={{
+                                margin: '0 0 16px 0',
+                                color: '#a78bfa',
+                                fontSize: '1.2rem',
+                                fontWeight: '600',
+                            }}>
+                                Generated Images
+                            </h3>
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                                gap: '16px',
+                            }}>
+                                {imageResponse.images.map((imageUrl, index) => (
+                                    <div key={index} style={{
+                                        borderRadius: 'var(--radius-sm)',
+                                        overflow: 'hidden',
+                                        border: '1px solid var(--glass-border)',
+                                        background: 'rgba(0,0,0,0.3)',
+                                    }}>
+                                        <img
+                                            src={imageUrl}
+                                            alt={`Generated image ${index + 1}`}
+                                            style={{
+                                                width: '100%',
+                                                height: 'auto',
+                                                display: 'block',
+                                            }}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Text Error Display */}
                     {aiError && (
                         <div style={{
                             padding: '16px',
