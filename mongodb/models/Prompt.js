@@ -21,12 +21,15 @@ const promptSchema = new mongoose.Schema({
   },
   imageUrl: {
     type: String,
-    required: true,
   },
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
+  },
+  conversation: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Conversation',
   },
   createdAt: {
     type: Date,

@@ -1,6 +1,7 @@
 import React from 'react';
 
 const Card = ({ item }) => {
+    console.log('Rendering Card with item:', item);
     return (
         <div className="glass-panel" style={{
             overflow: 'hidden',
@@ -45,7 +46,7 @@ const Card = ({ item }) => {
                     color: 'var(--text-muted)'
                 }}>
                     <span>{item.style}</span>
-                    <span>{new Date(item.createdAt).toLocaleDateString()}</span>
+                    <span>{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Just now'}</span>
                 </div>
             </div>
         </div>
