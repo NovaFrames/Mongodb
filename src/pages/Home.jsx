@@ -67,30 +67,33 @@ const Home = ({ isLoggedIn }) => {
         setPrompts([]);
     };
 
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
     return (
-        <div style={{ display: 'flex' }}>
+        <div style={{ display: 'flex', minHeight: '100vh' }}>
             {isLoggedIn && (
                 <Sidebar
                     conversations={conversations}
                     onSelectConversation={setActiveConversationId}
                     activeConversationId={activeConversationId}
                     onNewChat={handleNewChat}
+                    isOpen={isSidebarOpen}
+                    onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
                 />
             )}
-            <div style={{
-                flex: 1,
-                marginLeft: isLoggedIn ? '260px' : '0',
-                paddingTop: '80px',
-                transition: 'margin 0.3s ease'
+            <div className="main-content" style={{
+                marginLeft: isLoggedIn && isSidebarOpen && window.innerWidth > 768 ? 'var(--sidebar-width)' : '0',
             }}>
-                <Hero />
-                <Generator
-                    initialHistory={prompts}
-                    conversationId={activeConversationId}
-                    onGenerateSuccess={handleNewGeneration}
-                    onGenerateStart={() => setIsGenerating(true)}
-                    onGenerateEnd={() => setIsGenerating(false)}
-                />
+                <div className="container animate-fade-in">
+                    <Hero />
+                    <Generator
+                        initialHistory={prompts}
+                        conversationId={activeConversationId}
+                        onGenerateSuccess={handleNewGeneration}
+                        onGenerateStart={() => setIsGenerating(true)}
+                        onGenerateEnd={() => setIsGenerating(false)}
+                    />
+                </div>
             </div>
         </div>
     );

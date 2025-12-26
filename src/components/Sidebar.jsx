@@ -1,95 +1,146 @@
 import React from 'react';
 
-const Sidebar = ({ conversations, onSelectConversation, activeConversationId, onNewChat }) => {
+const Sidebar = ({ conversations, onSelectConversation, activeConversationId, onNewChat, isOpen, onToggle }) => {
     return (
-        <div style={{
-            width: '260px',
-            height: '100vh',
-            background: 'rgba(15, 15, 15, 0.95)',
-            borderRight: '1px solid var(--glass-border)',
-            display: 'flex',
-            flexDirection: 'column',
-            position: 'fixed',
-            left: 0,
-            top: 0,
-            zIndex: 1000,
-            padding: '20px 10px'
-        }}>
-            <button
-                onClick={onNewChat}
-                className="btn-primary"
-                style={{
-                    marginBottom: '20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '10px',
-                    padding: '12px'
-                }}
-            >
-                <span style={{ fontSize: '20px' }}>+</span> New Chat
-            </button>
+        <>
+            {/* Mobile Toggle Button (Visible when sidebar is closed) */}
+            {!isOpen && (
+                <button
+                    onClick={onToggle}
+                    style={{
+                        position: 'fixed',
+                        left: '20px',
+                        top: '20px',
+                        zIndex: 1100,
+                        width: '44px',
+                        height: '44px',
+                        borderRadius: '12px',
+                        background: 'var(--glass)',
+                        backdropFilter: 'blur(10px)',
+                        border: '1px solid var(--glass-border)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '20px',
+                        transition: 'var(--transition)'
+                    }}
+                >
+                    ☰
+                </button>
+            )}
 
             <div style={{
-                flex: 1,
-                overflowY: 'auto',
+                width: 'var(--sidebar-width)',
+                height: '100vh',
+                background: 'rgba(10, 10, 10, 0.95)',
+                backdropFilter: 'blur(20px)',
+                borderRight: '1px solid var(--glass-border)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '5px'
+                position: 'fixed',
+                left: isOpen ? '0' : 'calc(-1 * var(--sidebar-width))',
+                top: 0,
+                zIndex: 1000,
+                padding: '100px 16px 24px', // Increased top padding for navbar
+                transition: 'var(--transition)',
+                boxShadow: isOpen ? '20px 0 50px rgba(0,0,0,0.5)' : 'none'
             }}>
-                <h3 style={{
-                    fontSize: '12px',
-                    color: 'var(--text-muted)',
-                    textTransform: 'uppercase',
-                    padding: '0 10px',
-                    marginBottom: '10px'
-                }}>Recent</h3>
-
-                {conversations.map((conv) => (
-                    <div
-                        key={conv._id}
-                        onClick={() => onSelectConversation(conv._id)}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
+                    <div style={{ fontSize: '1.2rem', fontWeight: '800', letterSpacing: '-0.5px' }}>
+                        <span className="accent-gradient">Nova</span>
+                    </div>
+                    <button
+                        onClick={onToggle}
                         style={{
-                            padding: '10px',
-                            borderRadius: '8px',
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'var(--text-muted)',
                             cursor: 'pointer',
-                            background: activeConversationId === conv._id ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                            color: activeConversationId === conv._id ? 'white' : 'var(--text-muted)',
-                            fontSize: '14px',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            transition: 'all 0.2s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                            if (activeConversationId !== conv._id) {
-                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                                e.currentTarget.style.color = 'white';
-                            }
-                        }}
-                        onMouseLeave={(e) => {
-                            if (activeConversationId !== conv._id) {
-                                e.currentTarget.style.background = 'transparent';
-                                e.currentTarget.style.color = 'var(--text-muted)';
-                            }
+                            fontSize: '20px'
                         }}
                     >
-                        {conv.title}
-                    </div>
-                ))}
-            </div>
+                        ✕
+                    </button>
+                </div>
 
-            <div style={{
-                padding: '10px',
-                borderTop: '1px solid var(--glass-border)',
-                marginTop: '10px',
-                fontSize: '12px',
-                color: 'var(--text-muted)',
-                textAlign: 'center'
-            }}>
-                AI Assistant v1.0
+                <button
+                    onClick={onNewChat}
+                    className="btn-primary"
+                    style={{
+                        marginBottom: '32px',
+                        width: '100%',
+                        padding: '14px',
+                        borderRadius: 'var(--radius-lg)',
+                        fontSize: '0.9rem',
+                        letterSpacing: '0.5px'
+                    }}
+                >
+                    <span style={{ fontSize: '18px' }}>+</span> New Chat
+                </button>
+
+                <div style={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                    paddingRight: '4px'
+                }}>
+                    <h3 style={{
+                        fontSize: '0.7rem',
+                        color: 'var(--text-muted)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1.5px',
+                        padding: '0 12px',
+                        marginBottom: '8px',
+                        fontWeight: '700'
+                    }}>Recent Chats</h3>
+
+                    {conversations.map((conv) => (
+                        <div
+                            key={conv._id}
+                            onClick={() => onSelectConversation(conv._id)}
+                            className="glass-panel"
+                            style={{
+                                padding: '12px 16px',
+                                borderRadius: 'var(--radius-md)',
+                                cursor: 'pointer',
+                                background: activeConversationId === conv._id ? 'var(--glass-hover)' : 'transparent',
+                                border: activeConversationId === conv._id ? '1px solid var(--glass-border)' : '1px solid transparent',
+                                color: activeConversationId === conv._id ? 'var(--text-main)' : 'var(--text-muted)',
+                                fontSize: '0.9rem',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                transition: 'var(--transition)'
+                            }}
+                        >
+                            {conv.title}
+                        </div>
+                    ))}
+
+                    {conversations.length === 0 && (
+                        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                            No recent chats
+                        </div>
+                    )}
+                </div>
+
+                <div style={{
+                    padding: '20px 10px 0',
+                    borderTop: '1px solid var(--glass-border)',
+                    marginTop: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px'
+                }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-main)', fontWeight: '600' }}>NovaPrompt AI</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>v1.2.0 • Pro Plan</div>
+                </div>
             </div>
-        </div>
+        </>
     );
 };
 
