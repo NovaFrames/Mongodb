@@ -53,7 +53,7 @@ const Generator = ({ initialHistory = [], conversationId, onGenerateSuccess, onG
         if (onGenerateStart) onGenerateStart();
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.post('http://localhost:5000/api/prompts/generate',
+            const response = await axios.post('https://mongodb-gcau.onrender.com/api/prompts/generate',
                 { prompt: currentPrompt, style, useGemini, conversationId },
                 { headers: token ? { Authorization: `Bearer ${token}` } : undefined }
             );
@@ -83,7 +83,7 @@ const Generator = ({ initialHistory = [], conversationId, onGenerateSuccess, onG
         setPrompt('');
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.post('http://localhost:5000/api/prompts/generate-text',
+            const response = await axios.post('https://mongodb-gcau.onrender.com/api/prompts/generate-text',
                 { prompt: currentPrompt, style, conversationId },
                 { headers: token ? { Authorization: `Bearer ${token}` } : undefined }
             );
