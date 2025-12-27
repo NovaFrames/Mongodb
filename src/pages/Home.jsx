@@ -14,7 +14,7 @@ const Home = ({ isLoggedIn }) => {
         const token = localStorage.getItem('token');
         if (!token) return;
         try {
-            const response = await axios.get('https://mongodb-gcau.onrender.com/api/prompts/conversations', {
+            const response = await axios.get('http://localhost:5000/api/prompts/conversations', {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (response.data.success) {
@@ -28,7 +28,7 @@ const Home = ({ isLoggedIn }) => {
     const fetchConversationPrompts = async (convId) => {
         const token = localStorage.getItem('token');
         try {
-            const response = await axios.get(`https://mongodb-gcau.onrender.com/api/prompts/conversations/${convId}`, {
+            const response = await axios.get(`http://localhost:5000/api/prompts/conversations/${convId}`, {
                 headers: token ? { Authorization: `Bearer ${token}` } : undefined,
             });
             if (response.data.success) {

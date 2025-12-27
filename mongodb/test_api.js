@@ -3,7 +3,7 @@ const axios = require('axios');
 async function testApi() {
     try {
         console.log('Testing API /api/prompts/generate...');
-        const response = await axios.post('https://mongodb-gcau.onrender.com/api/prompts/generate', {
+        const response = await axios.post('http://localhost:5000/api/prompts/generate', {
             prompt: 'A futuristic banana',
             style: 'Realistic',
             useGemini: true
