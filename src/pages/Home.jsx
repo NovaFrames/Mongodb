@@ -10,14 +10,10 @@ import {
     CardContent,
     CardMedia,
     TextField,
-    InputAdornment,
-    Chip
+    InputAdornment
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import HomeIcon from '@mui/icons-material/Home';
 
 import { APPS } from '../data/apps';
 
@@ -36,47 +32,46 @@ const Home = ({ credits }) => {
 
     return (
         <Container maxWidth="xl" sx={{ py: 4 }}>
-            {/* Header with Credits */}
-            <Box sx={{ mb: 6 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+            <Box sx={{ mb: 5 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 3, mb: 3, flexWrap: 'wrap' }}>
                     <Box>
-                        <Typography variant="h4" sx={{ mb: 1, fontWeight: 800 }}>Apps Library</Typography>
+                        <Typography variant="h4" sx={{ mb: 0.8, fontWeight: 800 }}>Apps Library</Typography>
                         <Typography color="text.secondary">
-                            Explore premium AI tools for architecture and design.
+                            Materials, objects, and workflows for architectural AI.
                         </Typography>
                     </Box>
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
                         <Box sx={{
-                            px: 2,
-                            py: 0.8,
-                            bgcolor: 'rgba(234, 179, 8, 0.1)',
-                            border: '1px solid rgba(234, 179, 8, 0.2)',
-                            borderRadius: 2,
+                            px: 2.2,
+                            py: 0.7,
+                            bgcolor: 'rgba(212, 176, 76, 0.1)',
+                            border: '1px solid rgba(212, 176, 76, 0.2)',
+                            borderRadius: 999,
                             display: 'flex',
                             alignItems: 'center',
                             gap: 1
                         }}>
                             <Box sx={{ width: 8, height: 8, bgcolor: 'primary.main', borderRadius: '50%' }} />
-                            <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: 'primary.main' }}>
+                            <Typography sx={{ fontWeight: 700, fontSize: '0.8rem', color: 'primary.main', letterSpacing: '0.08em' }}>
                                 {credits || 0} CREDITS
                             </Typography>
                         </Box>
                         <TextField
-                            placeholder="Search apps..."
+                            placeholder="Search assets..."
                             size="small"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             sx={{
-                                width: 260,
+                                width: { xs: '100%', sm: 260 },
                                 '& .MuiOutlinedInput-root': {
-                                    bgcolor: 'rgba(255, 255, 255, 0.03)',
-                                    borderRadius: 3
+                                    bgcolor: 'rgba(15, 15, 15, 0.9)',
+                                    borderRadius: 2.5
                                 }
                             }}
                             InputProps={{
                                 startAdornment: (
                                     <InputAdornment position="start">
-                                        <SearchIcon sx={{ color: 'text.secondary', fontSize: '1.2rem' }} />
+                                        <SearchIcon sx={{ color: 'text.secondary', fontSize: '1.1rem' }} />
                                     </InputAdornment>
                                 ),
                             }}
@@ -84,48 +79,59 @@ const Home = ({ credits }) => {
                     </Box>
                 </Box>
 
-                <Box sx={{ display: 'flex', gap: 1.5, mt: 3 }}>
+                <Box sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    p: 0.6,
+                    borderRadius: 999,
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    bgcolor: 'rgba(12,12,12,0.6)'
+                }}>
                     {categories.map((cat) => (
-                        <Chip
+                        <Button
                             key={cat}
-                            label={cat}
                             onClick={() => setCategory(cat)}
+                            variant={category === cat ? 'contained' : 'text'}
                             sx={{
-                                px: 1,
-                                fontWeight: 800,
+                                px: 2.2,
+                                py: 0.6,
+                                borderRadius: 999,
                                 fontSize: '0.75rem',
-                                letterSpacing: '0.5px',
-                                bgcolor: category === cat ? 'primary.main' : 'rgba(255, 255, 255, 0.05)',
+                                fontWeight: 700,
+                                letterSpacing: '0.08em',
                                 color: category === cat ? 'black' : 'text.secondary',
-                                border: 'none',
-                                textTransform: 'uppercase',
+                                bgcolor: category === cat ? 'primary.main' : 'transparent',
+                                minWidth: 'auto',
                                 '&:hover': {
-                                    bgcolor: category === cat ? 'primary.main' : 'rgba(255, 255, 255, 0.1)',
+                                    bgcolor: category === cat ? 'primary.main' : 'rgba(255,255,255,0.06)',
                                 }
                             }}
-                        />
+                        >
+                            {cat}
+                        </Button>
                     ))}
                 </Box>
             </Box>
 
-            <Grid container spacing={3}> {/* Reduced spacing slightly for better density */}
+            <Grid container spacing={3}>
                 {filteredApps.map((app) => (
-                    <Grid item xs={4} sm={4} lg={4} key={app.id} sx={{ display: 'flex' }}>
+                    <Grid item xs={12} sm={6} lg={4} key={app.id} sx={{ display: 'flex' }}>
                         <Card sx={{
                             display: 'flex',
                             flexDirection: 'column',
                             width: '100%', // Ensuring full width of grid item
-                            bgcolor: '#0D0D0D',
+                            bgcolor: 'rgba(16, 16, 16, 0.9)',
                             border: '1px solid rgba(255, 255, 255, 0.08)',
-                            borderRadius: 1.5, // Refined slightly smaller radius
+                            borderRadius: 3,
                             overflow: 'hidden',
                             position: 'relative',
                             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                             cursor: 'pointer',
                             '&:hover': {
-                                transform: 'translateY(-6px)',
-                                borderColor: 'primary.main',
-                                boxShadow: '0 8px 30px rgba(234, 179, 8, 0.15)',
+                                transform: 'translateY(-4px)',
+                                borderColor: 'rgba(212, 176, 76, 0.6)',
+                                boxShadow: '0 12px 30px rgba(0, 0, 0, 0.45)',
                                 '& .before-image': {
                                     opacity: 1
                                 },
@@ -157,7 +163,7 @@ const Home = ({ credits }) => {
                             <Box sx={{
                                 position: 'relative',
                                 overflow: 'hidden',
-                                height: 250, // Standardizing height to match reference image aspect
+                                height: 230,
                                 bgcolor: app.imageBg === 'bg-white' ? '#FFFFFF' : 'transparent'
                             }}>
                                 {/* AFTER IMAGE (DEFAULT & SCALES ON HOVER) */}
@@ -194,19 +200,27 @@ const Home = ({ credits }) => {
                                 />
                             </Box>
                             <CardContent sx={{ flexGrow: 1, p: 2.5 }}>
-                                <Typography
-                                    sx={{
-                                        fontSize: '0.6rem',
-                                        fontWeight: 900,
-                                        color: 'primary.main',
-                                        letterSpacing: '1.2px',
-                                        mb: 1,
-                                        textTransform: 'uppercase'
-                                    }}
-                                >
-                                    {app.tags?.join(' • ')}
-                                </Typography>
-                                <Typography variant="h6" sx={{ fontWeight: 800, mb: 1.2, lineHeight: 1.2, fontSize: '1.1rem' }}>
+                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
+                                    {app.tags?.map((tag) => (
+                                        <Box
+                                            key={tag}
+                                            sx={{
+                                                px: 1.2,
+                                                py: 0.35,
+                                                borderRadius: 999,
+                                                fontSize: '0.6rem',
+                                                fontWeight: 700,
+                                                letterSpacing: '0.1em',
+                                                textTransform: 'uppercase',
+                                                bgcolor: 'rgba(255,255,255,0.06)',
+                                                color: 'text.secondary'
+                                            }}
+                                        >
+                                            {tag}
+                                        </Box>
+                                    ))}
+                                </Box>
+                                <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.1, lineHeight: 1.25, fontSize: '1.05rem' }}>
                                     {app.title}
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary" sx={{ mb: 3, fontSize: '0.85rem', lineHeight: 1.5 }}>
@@ -217,9 +231,9 @@ const Home = ({ credits }) => {
                                     variant="outlined"
                                     startIcon={<AutoAwesomeIcon sx={{ fontSize: '1rem !important' }} />}
                                     sx={{
-                                        border: '1px solid rgba(255,255,255,0.1)',
-                                        color: 'white',
-                                        fontWeight: 800,
+                                        border: '1px solid rgba(255,255,255,0.12)',
+                                        color: 'text.primary',
+                                        fontWeight: 700,
                                         py: 1,
                                         fontSize: '0.85rem',
                                         '&:hover': { bgcolor: 'primary.main', color: 'black', border: '1px solid transparent' }

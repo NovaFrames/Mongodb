@@ -6,11 +6,13 @@ require("dotenv").config();
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "25mb" }));
+app.use(express.urlencoded({ limit: "25mb", extended: true }));
 
 // Routes
 app.use("/api/prompts", require("./routes/promptRoutes"));
 app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/mot", require("./routes/motRoutes"));
 
 // Database Connection & Server Start
 const PORT = process.env.PORT || 5000;

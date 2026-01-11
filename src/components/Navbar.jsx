@@ -20,7 +20,7 @@ const Navbar = ({ isLoggedIn, setIsLoggedIn, credits, setCredits }) => {
         <AppBar position="fixed" color="inherit" elevation={0} sx={{
             borderBottom: '1px solid',
             borderColor: 'divider',
-            bgcolor: 'rgba(255, 255, 255, 0.9)',
+            bgcolor: 'rgba(10, 10, 10, 0.9)',
             backdropFilter: 'blur(10px)',
             zIndex: (theme) => theme.zIndex.drawer + 1
         }}>
@@ -43,13 +43,13 @@ const Navbar = ({ isLoggedIn, setIsLoggedIn, credits, setCredits }) => {
                     <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                         {isLoggedIn && credits !== null && (
                             <Chip
-                                icon={<MonetizationOnIcon sx={{ color: '#fbbf24 !important' }} />}
+                                icon={<MonetizationOnIcon sx={{ color: '#D4B04C !important' }} />}
                                 label={`${credits} Credits`}
                                 variant="outlined"
                                 sx={{
                                     fontWeight: 700,
                                     borderColor: 'divider',
-                                    bgcolor: 'rgba(251, 191, 36, 0.05)',
+                                    bgcolor: 'rgba(212, 176, 76, 0.08)',
                                     color: 'text.primary'
                                 }}
                             />

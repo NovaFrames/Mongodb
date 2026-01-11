@@ -100,7 +100,7 @@ const Sidebar = ({ setIsLoggedIn }) => {
                                 borderRadius: 2,
                                 py: 1.5,
                                 '&.active': {
-                                    bgcolor: 'rgba(234, 179, 8, 0.15)',
+                                    bgcolor: 'rgba(212, 176, 76, 0.12)',
                                     color: 'primary.main',
                                     '& .MuiListItemIcon-root': {
                                         color: 'primary.main',

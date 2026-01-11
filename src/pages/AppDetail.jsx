@@ -35,6 +35,7 @@ const AppDetail = () => {
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [snackbarSeverity, setSnackbarSeverity] = useState('info');
+    const [showGenerated, setShowGenerated] = useState(false);
     const fileInputRef = useRef(null);
 
     if (!app) return <Typography>App not found</Typography>;
@@ -147,6 +148,7 @@ const AppDetail = () => {
 
             if (response.data.success) {
                 setGeneratedImageUrl(response.data.data.imageUrl);
+                setShowGenerated(true);
                 if (typeof response.data.credits === 'number') {
                     localStorage.setItem('credits', String(response.data.credits));
                     setCredits(response.data.credits);
@@ -229,8 +231,8 @@ const AppDetail = () => {
                         <Box sx={{
                             px: 2,
                             py: 0.8,
-                            bgcolor: 'rgba(234, 179, 8, 0.1)',
-                            border: '1px solid rgba(234, 179, 8, 0.2)',
+                            bgcolor: 'rgba(212, 176, 76, 0.1)',
+                            border: '1px solid rgba(212, 176, 76, 0.2)',
                             borderRadius: 2,
                             display: 'flex',
                             alignItems: 'center',
@@ -267,7 +269,7 @@ const AppDetail = () => {
                         cursor: 'pointer',
                         transition: 'all 0.2s',
                         borderColor: isDragging ? 'primary.main' : 'rgba(255,255,255,0.15)',
-                        bgcolor: isDragging ? 'rgba(234, 179, 8, 0.08)' : 'rgba(255,255,255,0.01)',
+                        bgcolor: isDragging ? 'rgba(212, 176, 76, 0.08)' : 'rgba(255,255,255,0.01)',
                         '&:hover': { bgcolor: 'rgba(255,255,255,0.03)', borderColor: 'primary.main' }
                     }}
                         onClick={handleUploadClick}
@@ -327,6 +329,22 @@ const AppDetail = () => {
                         >
                             {isGenerating ? <CircularProgress size={22} sx={{ color: 'black' }} /> : 'Generate'}
                         </Button>
+                        {generatedImageUrl && (
+                            <Button
+                                fullWidth
+                                variant="outlined"
+                                sx={{
+                                    mt: 1.2,
+                                    borderColor: 'rgba(255,255,255,0.2)',
+                                    color: 'text.primary',
+                                    fontWeight: 700,
+                                    '&:hover': { borderColor: 'primary.main', color: 'primary.main' }
+                                }}
+                                onClick={() => setShowGenerated((prev) => !prev)}
+                            >
+                                {showGenerated ? 'Hide Generated Image' : 'View Generated Image'}
+                            </Button>
+                        )}
                         {isGenerating && (
                             <Box
                                 sx={{
@@ -395,8 +413,8 @@ const AppDetail = () => {
                         <Box sx={{
                             width: 120,
                             height: 120,
-                            bgcolor: app.imageBg === 'bg-white' ? '#FFFFFF' : 'rgba(234, 179, 8, 0.05)',
-                            border: '1px solid rgba(234, 179, 8, 0.3)',
+                            bgcolor: app.imageBg === 'bg-white' ? '#FFFFFF' : 'rgba(212, 176, 76, 0.05)',
+                            border: '1px solid rgba(212, 176, 76, 0.3)',
                             borderRadius: 2,
                             overflow: 'hidden'
                         }}>
@@ -411,6 +429,26 @@ const AppDetail = () => {
                     <Typography color="text.secondary" sx={{ fontSize: '0.9rem' }}>
                         {generatedImageUrl ? 'Your image is ready.' : 'Upload an image and add instructions to get started'}
                     </Typography>
+                    {generatedImageUrl && showGenerated && (
+                        <Box
+                            sx={{
+                                mt: 3,
+                                width: '100%',
+                                maxWidth: 420,
+                                borderRadius: 3,
+                                overflow: 'hidden',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                bgcolor: 'rgba(16,16,16,0.9)',
+                            }}
+                        >
+                            <Box
+                                component="img"
+                                src={generatedImageUrl}
+                                alt="Generated"
+                                sx={{ width: '100%', display: 'block' }}
+                            />
+                        </Box>
+                    )}
                 </Box>
             </Box>
         </Box>
