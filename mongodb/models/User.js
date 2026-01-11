@@ -15,6 +15,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    credits: {
+        type: Number,
+        default: 10000,
+        min: 0,
+    },
     createdAt: {
         type: Date,
         default: Date.now,

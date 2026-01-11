@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
-const Generator = ({ initialHistory = [], conversationId, onGenerateSuccess, onGenerateStart, onGenerateEnd }) => {
+const Generator = ({ initialHistory = [], conversationId, onGenerateSuccess, onGenerateStart, onGenerateEnd, onCreditsUpdate }) => {
     const [prompt, setPrompt] = useState('');
     const [loading, setLoading] = useState(false);
     const [style, setStyle] = useState('Realistic');
     const [textLoading, setTextLoading] = useState(false);
     const [error, setError] = useState('');
+    const [editFile, setEditFile] = useState(null);
+    const [editLoading, setEditLoading] = useState(false);
+    const [editError, setEditError] = useState('');
     const [chatHistory, setChatHistory] = useState([]);
     const chatEndRef = useRef(null);
 
@@ -64,6 +67,12 @@ const Generator = ({ initialHistory = [], conversationId, onGenerateSuccess, onG
                     contentType: 'image',
                     prompt: response.data.data.prompt
                 }]);
+                if (typeof response.data.credits === 'number') {
+                    localStorage.setItem('credits', String(response.data.credits));
+                    if (onCreditsUpdate) {
+                        onCreditsUpdate(response.data.credits);
+                    }
+                }
                 onGenerateSuccess(response.data.data, response.data.conversationId);
                 setError('');
             }
@@ -89,6 +98,12 @@ const Generator = ({ initialHistory = [], conversationId, onGenerateSuccess, onG
             );
             if (response.data.success) {
                 setChatHistory(prev => [...prev, { type: 'ai', content: response.data.data.aiResponse, contentType: 'text' }]);
+                if (typeof response.data.credits === 'number') {
+                    localStorage.setItem('credits', String(response.data.credits));
+                    if (onCreditsUpdate) {
+                        onCreditsUpdate(response.data.credits);
+                    }
+                }
                 onGenerateSuccess(response.data.data, response.data.conversationId);
                 setError('');
             }
@@ -96,6 +111,56 @@ const Generator = ({ initialHistory = [], conversationId, onGenerateSuccess, onG
             setError(err.response?.data?.message || "Text generation failed.");
         } finally {
             setTextLoading(false);
+        }
+    };
+
+    const handleEditImage = async () => {
+        if (!prompt || !editFile) return;
+        setEditLoading(true);
+        setEditError('');
+        setError('');
+        const currentPrompt = prompt;
+        setChatHistory(prev => [...prev, { type: 'user', content: currentPrompt }]);
+        setPrompt('');
+        if (onGenerateStart) onGenerateStart();
+        try {
+            const token = localStorage.getItem('token');
+            const formData = new FormData();
+            formData.append('prompt', currentPrompt);
+            formData.append('style', style);
+            if (conversationId) {
+                formData.append('conversationId', conversationId);
+            }
+            formData.append('image', editFile);
+
+            const response = await axios.post(
+                'http://localhost:5000/api/prompts/generate-edit',
+                formData,
+                { headers: token ? { Authorization: `Bearer ${token}` } : undefined }
+            );
+
+            if (response.data.success) {
+                setChatHistory(prev => [...prev, {
+                    type: 'ai',
+                    content: response.data.data.imageUrl,
+                    contentType: 'image',
+                    prompt: response.data.data.prompt
+                }]);
+                if (typeof response.data.credits === 'number') {
+                    localStorage.setItem('credits', String(response.data.credits));
+                    if (onCreditsUpdate) {
+                        onCreditsUpdate(response.data.credits);
+                    }
+                }
+                setEditFile(null);
+                onGenerateSuccess(response.data.data, response.data.conversationId);
+                setEditError('');
+            }
+        } catch (err) {
+            setEditError(err.response?.data?.message || "Image edit failed.");
+        } finally {
+            setEditLoading(false);
+            if (onGenerateEnd) onGenerateEnd();
         }
     };
 
@@ -211,6 +276,43 @@ const Generator = ({ initialHistory = [], conversationId, onGenerateSuccess, onG
                                 }}
                             />
                             <div style={{ position: 'absolute', right: '12px', bottom: '12px', display: 'flex', gap: '8px' }}>
+                                <label
+                                    style={{
+                                        background: 'rgba(255,255,255,0.05)',
+                                        color: 'var(--text-main)',
+                                        border: '1px solid var(--glass-border)',
+                                        padding: '8px 12px',
+                                        borderRadius: '10px',
+                                        cursor: 'pointer',
+                                        fontSize: '0.8rem',
+                                        fontWeight: '600'
+                                    }}
+                                >
+                                    📎 Upload
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => setEditFile(e.target.files?.[0] || null)}
+                                        style={{ display: 'none' }}
+                                    />
+                                </label>
+                                <button
+                                    onClick={handleEditImage}
+                                    disabled={editLoading || textLoading || loading || !prompt || !editFile}
+                                    style={{
+                                        background: 'rgba(255,255,255,0.05)',
+                                        color: 'var(--text-main)',
+                                        border: '1px solid var(--glass-border)',
+                                        padding: '8px 12px',
+                                        borderRadius: '10px',
+                                        cursor: 'pointer',
+                                        fontSize: '0.8rem',
+                                        fontWeight: '600',
+                                        opacity: !prompt || !editFile || editLoading || textLoading || loading ? 0.5 : 1
+                                    }}
+                                >
+                                    {editLoading ? 'Editing...' : '✏️ Edit'}
+                                </button>
                                 <button
                                     onClick={() => handleGenerate(true)}
                                     disabled={loading || textLoading || !prompt}
@@ -268,11 +370,17 @@ const Generator = ({ initialHistory = [], conversationId, onGenerateSuccess, onG
                                 <option value="Cyberpunk">Cyberpunk Style</option>
                                 <option value="Oil Painting">Oil Painting Style</option>
                             </select>
+                            {editFile && (
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                    Selected: {editFile.name}
+                                </div>
+                            )}
                             <div style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                                 Press Enter to send
                             </div>
                         </div>
                         {error && <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid #ff4444', background: 'rgba(255, 68, 68, 0.1)', color: '#ff4444', fontSize: '0.85rem' }}>⚠️ {error}</div>}
+                        {editError && <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid #ff4444', background: 'rgba(255, 68, 68, 0.1)', color: '#ff4444', fontSize: '0.85rem' }}>⚠️ {editError}</div>}
                     </div>
                 </div>
             </div>

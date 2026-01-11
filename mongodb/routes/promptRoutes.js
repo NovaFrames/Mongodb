@@ -1,11 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const { createImage, getPrompts, getUserPrompts, generateText, getConversations, getConversationPrompts } = require('../controllers/promptController');
+const multer = require('multer');
+const { createImage, editImage, getPrompts, getUserPrompts, generateText, getConversations, getConversationPrompts } = require('../controllers/promptController');
 const auth = require('../middleware/auth');
-const optionalAuth = require('../middleware/optionalAuth');
 
-router.post('/generate', optionalAuth, createImage);
-router.post('/generate-text', optionalAuth, generateText);
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 },
+});
+
+router.post('/generate', auth, createImage);
+router.post('/generate-edit', auth, upload.single('image'), editImage);
+router.post('/generate-text', auth, generateText);
 router.get('/', getPrompts);
 router.get('/mine', auth, getUserPrompts);
 router.get('/conversations', auth, getConversations);

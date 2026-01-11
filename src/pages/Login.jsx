@@ -1,73 +1,140 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
+import {
+    Container,
+    Paper,
+    Typography,
+    TextField,
+    Button,
+    Box,
+    Alert,
+    InputAdornment,
+    IconButton
+} from '@mui/material';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import EmailIcon from '@mui/icons-material/Email';
+import LockIcon from '@mui/icons-material/Lock';
 
-const Login = ({ setIsLoggedIn }) => {
+const Login = ({ setIsLoggedIn, setCredits }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        setError('');
         try {
             const res = await axios.post('http://localhost:5000/api/auth/login', { email, password });
             if (res.data.success) {
                 localStorage.setItem('token', res.data.token);
                 localStorage.setItem('username', res.data.user.username);
+                if (typeof res.data.user.credits === 'number') {
+                    localStorage.setItem('credits', String(res.data.user.credits));
+                    setCredits(res.data.user.credits);
+                }
                 setIsLoggedIn(true);
                 navigate('/');
             } else {
                 setError(res.data.message);
             }
         } catch (err) {
-            setError('Login failed. Please try again.');
+            setError('Login failed. Please check your credentials.');
         }
     };
 
     return (
-        <div className="container" style={{ paddingTop: '120px', maxWidth: '400px' }}>
-            <div className="glass-panel" style={{ padding: '40px' }}>
-                <h2 style={{ marginBottom: '24px', textAlign: 'center' }}>Welcome Back</h2>
-                {error && <div style={{ color: '#ff4d4d', marginBottom: '16px', textAlign: 'center' }}>{error}</div>}
-                <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <input
-                        type="email"
-                        placeholder="Email"
+        <Container maxWidth="xs" sx={{ mt: 15, mb: 4 }}>
+            <Paper elevation={0} sx={{ p: 4, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+                <Box sx={{ mb: 3, textAlign: 'center' }}>
+                    <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+                        Welcome Back
+                    </Typography>
+                    <Typography color="text.secondary">
+                        Enter your details to access ARCONE
+                    </Typography>
+                </Box>
+
+                {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+
+                <form onSubmit={handleLogin}>
+                    <TextField
+                        fullWidth
+                        label="Email Address"
+                        variant="outlined"
+                        margin="normal"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        style={{
-                            padding: '12px',
-                            borderRadius: 'var(--radius-sm)',
-                            border: '1px solid var(--glass-border)',
-                            background: 'rgba(0,0,0,0.3)',
-                            color: 'white',
-                            outline: 'none'
-                        }}
                         required
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <EmailIcon color="action" />
+                                </InputAdornment>
+                            ),
+                        }}
                     />
-                    <input
-                        type="password"
-                        placeholder="Password"
+                    <TextField
+                        fullWidth
+                        label="Password"
+                        type={showPassword ? 'text' : 'password'}
+                        variant="outlined"
+                        margin="normal"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        style={{
-                            padding: '12px',
-                            borderRadius: 'var(--radius-sm)',
-                            border: '1px solid var(--glass-border)',
-                            background: 'rgba(0,0,0,0.3)',
-                            color: 'white',
-                            outline: 'none'
-                        }}
                         required
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <LockIcon color="action" />
+                                </InputAdornment>
+                            ),
+                            endAdornment: (
+                                <InputAdornment position="end">
+                                    <IconButton
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        edge="end"
+                                    >
+                                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                                    </IconButton>
+                                </InputAdornment>
+                            ),
+                        }}
                     />
-                    <button type="submit" className="btn-primary" style={{ marginTop: '8px' }}>Sign In</button>
+                    <Button
+                        fullWidth
+                        type="submit"
+                        variant="contained"
+                        size="large"
+                        sx={{ mt: 3, py: 1.5, fontWeight: 700 }}
+                        disableElevation
+                    >
+                        Sign In
+                    </Button>
                 </form>
-                <p style={{ marginTop: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                    Don't have an account? <Link to="/register" style={{ color: 'var(--primary)', textDecoration: 'none' }}>Sign Up</Link>
-                </p>
-            </div>
-        </div>
+
+                <Box sx={{ mt: 3, textAlign: 'center' }}>
+                    <Typography color="text.secondary">
+                        Don't have an account?{' '}
+                        <Box
+                            component={Link}
+                            to="/register"
+                            sx={{
+                                color: 'primary.main',
+                                textDecoration: 'none',
+                                fontWeight: 600,
+                                '&:hover': { textDecoration: 'underline' }
+                            }}
+                        >
+                            Sign Up
+                        </Box>
+                    </Typography>
+                </Box>
+            </Paper>
+        </Container>
     );
 };
 

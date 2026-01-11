@@ -43,6 +43,10 @@ exports.login = async (req, res) => {
         if (!user) {
             return res.json({ success: false, message: 'Invalid credentials' });
         }
+        if (typeof user.credits !== 'number') {
+            user.credits = 10000;
+            await user.save();
+        }
 
         // Check password
         const isMatch = await bcrypt.compare(password, user.password);
@@ -64,7 +68,7 @@ exports.login = async (req, res) => {
             { expiresIn: '1h' },
             (err, token) => {
                 if (err) throw err;
-                res.json({ success: true, token, user: { username: user.username, email: user.email } });
+                res.json({ success: true, token, user: { username: user.username, email: user.email, credits: user.credits } });
             }
         );
     } catch (error) {

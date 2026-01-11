@@ -1,103 +1,84 @@
-import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { AppBar, Toolbar, Typography, Button, Container, Box, Chip } from '@mui/material';
+import LogoutIcon from '@mui/icons-material/Logout';
+import LoginIcon from '@mui/icons-material/Login';
+import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 
-const Navbar = ({ isLoggedIn, setIsLoggedIn }) => {
+const Navbar = ({ isLoggedIn, setIsLoggedIn, credits, setCredits }) => {
     const navigate = useNavigate();
 
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('username');
+        localStorage.removeItem('credits');
         setIsLoggedIn(false);
+        if (setCredits) setCredits(null);
         navigate('/login');
     };
 
     return (
-        <nav style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 1100, // Above sidebar
-            padding: '16px 0',
+        <AppBar position="fixed" color="inherit" elevation={0} sx={{
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            bgcolor: 'rgba(255, 255, 255, 0.9)',
+            backdropFilter: 'blur(10px)',
+            zIndex: (theme) => theme.zIndex.drawer + 1
         }}>
-            <div className="container">
-                <div className="glass-panel" style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '12px 24px',
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-                }}>
-                    <Link to="/" style={{
-                        textDecoration: 'none',
-                        color: 'inherit',
-                        fontSize: '1.5rem',
-                        fontWeight: '800',
-                        letterSpacing: '-1px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                    }}>
-                        <div style={{
-                            width: '32px',
-                            height: '32px',
-                            background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
-                            borderRadius: '8px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'white',
-                            fontSize: '1.2rem'
-                        }}>N</div>
-                        <span className="gradient-text">Nova</span>Prompt
-                    </Link>
+            <Box sx={{ px: 3 }}>
+                <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
+                    <Typography
+                        variant="h6"
+                        component={Link}
+                        to="/"
+                        sx={{
+                            fontWeight: 900,
+                            letterSpacing: '-0.5px',
+                            color: 'primary.main',
+                            textDecoration: 'none',
+                        }}
+                    >
+                        ARCONE
+                    </Typography>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        {isLoggedIn ? (
-                            <button
-                                onClick={handleLogout}
-                                className="glass-panel"
-                                style={{
-                                    background: 'rgba(255, 255, 255, 0.05)',
-                                    color: 'var(--text-main)',
-                                    fontWeight: '600',
-                                    cursor: 'pointer',
-                                    padding: '8px 20px',
-                                    fontSize: '0.9rem',
-                                    border: '1px solid var(--glass-border)',
-                                    transition: 'var(--transition)'
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                        {isLoggedIn && credits !== null && (
+                            <Chip
+                                icon={<MonetizationOnIcon sx={{ color: '#fbbf24 !important' }} />}
+                                label={`${credits} Credits`}
+                                variant="outlined"
+                                sx={{
+                                    fontWeight: 700,
+                                    borderColor: 'divider',
+                                    bgcolor: 'rgba(251, 191, 36, 0.05)',
+                                    color: 'text.primary'
                                 }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+                            />
+                        )}
+                        {isLoggedIn ? (
+                            <Button
+                                variant="outlined"
+                                color="inherit"
+                                startIcon={<LogoutIcon />}
+                                onClick={handleLogout}
+                                sx={{ borderColor: 'divider' }}
                             >
                                 Logout
-                            </button>
+                            </Button>
                         ) : (
-                            <Link to="/login" style={{ textDecoration: 'none' }}>
-                                <button
-                                    className="glass-panel"
-                                    style={{
-                                        background: 'var(--primary)',
-                                        border: 'none',
-                                        color: 'white',
-                                        fontWeight: '600',
-                                        cursor: 'pointer',
-                                        fontSize: '0.9rem',
-                                        padding: '8px 20px',
-                                        boxShadow: '0 4px 15px var(--primary-glow)',
-                                        transition: 'var(--transition)'
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
-                                    onMouseLeave={(e) => e.currentTarget.style.filter = 'none'}
-                                >
-                                    Sign In
-                                </button>
-                            </Link>
+                            <Button
+                                variant="contained"
+                                component={Link}
+                                to="/login"
+                                startIcon={<LoginIcon />}
+                                disableElevation
+                            >
+                                Sign In
+                            </Button>
                         )}
-                    </div>
-                </div>
-            </div>
-        </nav>
+                    </Box>
+                </Toolbar>
+            </Box>
+        </AppBar>
     );
 };
 

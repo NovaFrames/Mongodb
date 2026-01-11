@@ -1,20 +1,9 @@
 const Prompt = require('../models/Prompt');
 const Conversation = require('../models/Conversation');
+const User = require('../models/User');
 const axios = require('axios');
-const Groq = require('groq-sdk');
 const { GoogleGenAI } = require('@google/genai');
 
-// Initialize Groq SDK lazily to avoid crash if key is missing on startup
-let groq;
-const getGroqClient = () => {
-    if (!groq) {
-        if (!process.env.GROQ_API_KEY) {
-            throw new Error('GROQ_API_KEY is missing');
-        }
-        groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    }
-    return groq;
-};
 
 // Initialize Gemini SDK lazily
 let genAI;
@@ -28,62 +17,123 @@ const getGeminiClient = () => {
     return genAI;
 };
 
+const ensureCredits = async (userId, amount) => {
+    if (!userId) {
+        return null;
+    }
+    await User.updateOne(
+        { _id: userId, credits: { $exists: false } },
+        { $set: { credits: 10000 } }
+    );
+    const user = await User.findById(userId).select('credits');
+    if (!user || typeof user.credits !== 'number' || user.credits < amount) {
+        return null;
+    }
+    return user;
+};
+
+const debitCredits = async (userId, amount) => {
+    if (!userId) {
+        return null;
+    }
+    await User.updateOne(
+        { _id: userId, credits: { $exists: false } },
+        { $set: { credits: 10000 } }
+    );
+    return User.findOneAndUpdate(
+        { _id: userId, credits: { $gte: amount } },
+        { $inc: { credits: -amount } },
+        { new: true }
+    );
+};
+
+const refundCredits = async (userId, amount) => {
+    if (!userId) {
+        return null;
+    }
+    return User.findByIdAndUpdate(
+        userId,
+        { $inc: { credits: amount } },
+        { new: true }
+    );
+};
+
 exports.createImage = async (req, res) => {
     try {
-        const { prompt, negativePrompt, style, useGemini, conversationId } = req.body;
+        const { prompt, negativePrompt, style, conversationId } = req.body;
         const userId = req.user?.id; // Optional
 
-        if (!process.env.GROQ_API_KEY || !process.env.HF_API_KEY) {
-            console.warn('API Keys missing. Using Pollinations.ai as fallback.');
+        if (!userId) {
+            return res.status(401).json({ success: false, message: 'Login required to use credits' });
+        }
+
+        const updatedUser = await debitCredits(userId, 50);
+        if (!updatedUser) {
+            return res.status(402).json({ success: false, message: 'Insufficient credits' });
+        }
+
+        if (!process.env.GEMINI_API_KEY) {
+            console.warn('GEMINI_API_KEY missing. Using Pollinations.ai as fallback.');
         }
 
         let aiData;
         let finalPrompt = prompt;
 
-        // 1. Enhance prompt (Groq or Fallback)
-        if (process.env.GROQ_API_KEY) {
+        // 1. Enhance prompt with Gemini
+        if (process.env.GEMINI_API_KEY) {
             try {
-                console.log('Enhancing prompt with Groq SDK...');
-                const client = getGroqClient();
-                const chatCompletion = await client.chat.completions.create({
-                    messages: [
-                        {
-                            role: 'system',
-                            content: 'Act as an expert AI Art prompt engineer. Return ONLY a JSON object with "enhancedPrompt" (max 200 chars optimized for Stable Diffusion) and "caption" (a short, creative 1-sentence caption).'
-                        },
-                        {
-                            role: 'user',
-                            content: `User Input: "${prompt}", Style: "${style}"`
-                        }
-                    ],
-                    model: 'llama3-70b-8192',
-                    response_format: { type: "json_object" }
+                console.log('Enhancing prompt with Gemini...');
+                const client = getGeminiClient();
+
+                const enhancePrompt = `Act as an expert AI Art prompt engineer. 
+User Input: "${prompt}"
+Style: "${style || 'Realistic'}"
+
+Return ONLY a JSON object with:
+- "enhancedPrompt": a detailed, optimized prompt (max 200 chars) for image generation
+- "caption": a short, creative 1-sentence caption
+
+JSON:`;
+
+                const enhanceResponse = await client.models.generateContent({
+                    model: "gemini-2.0-flash",
+                    contents: enhancePrompt,
                 });
-                aiData = JSON.parse(chatCompletion.choices[0].message.content);
-                finalPrompt = aiData.enhancedPrompt || prompt;
+
+                const textPart = enhanceResponse.candidates?.[0]?.content?.parts?.find(part => part.text);
+                const text = textPart?.text || '';
+
+                try {
+                    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+                    aiData = JSON.parse(cleanText);
+                    finalPrompt = aiData.enhancedPrompt || prompt;
+                } catch (e) {
+                    console.error('Failed to parse Gemini response, using raw prompt:', e.message);
+                    aiData = { enhancedPrompt: prompt, caption: "Generated by AI" };
+                }
             } catch (err) {
-                console.error('Groq enhancement failed, using raw prompt:', err.message);
+                console.error('Gemini enhancement failed, using raw prompt:', err.message);
                 aiData = { enhancedPrompt: prompt, caption: "Generated by AI" };
             }
         } else {
             aiData = { enhancedPrompt: prompt, caption: "Generated by AI (Free Mode)" };
         }
 
-        // 2. Generate Image (HF, Gemini, or Pollinations)
+        // 2. Generate Image with Gemini
         let imageUrl;
 
-        if (useGemini && process.env.GEMINI_API_KEY) {
+        if (process.env.GEMINI_API_KEY) {
             try {
-                console.log('Generating image with Gemini (New SDK)...');
+                console.log('Generating image with Gemini...');
                 const client = getGeminiClient();
-                
+
                 const geminiResponse = await client.models.generateContent({
                     model: "gemini-2.5-flash-image",
-                    contents: `${finalPrompt}, ${style}, high quality, 8k`,
+                    contents: `${finalPrompt}, ${style || 'Realistic'}, high quality, 8k`,
                 });
 
                 const part = geminiResponse.candidates[0].content.parts.find(p => p.inlineData);
-                
+
                 if (part) {
                     imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
                 } else {
@@ -91,33 +141,12 @@ exports.createImage = async (req, res) => {
                 }
             } catch (err) {
                 console.error('Gemini generation failed, falling back to Pollinations:', err.message);
-                const encodedPrompt = encodeURIComponent(`${finalPrompt}, ${style}, high quality, 8k`);
-                imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?nologo=true&private=true`;
-            }
-        } else if (process.env.HF_API_KEY) {
-            try {
-                console.log('Generating image with Hugging Face...');
-                const hfResponse = await axios.post(
-                    'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0',
-                    { inputs: `${finalPrompt}, ${style}, high quality, 8k` },
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${process.env.HF_API_KEY}`,
-                            'Content-Type': 'application/json'
-                        },
-                        responseType: 'arraybuffer'
-                    }
-                );
-                const base64Image = Buffer.from(hfResponse.data, 'binary').toString('base64');
-                imageUrl = `data:image/png;base64,${base64Image}`;
-            } catch (err) {
-                console.error('HF generation failed, falling back to Pollinations:', err.message);
-                const encodedPrompt = encodeURIComponent(`${finalPrompt}, ${style}, high quality, 8k`);
+                const encodedPrompt = encodeURIComponent(`${finalPrompt}, ${style || 'Realistic'}, high quality, 8k`);
                 imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?nologo=true&private=true`;
             }
         } else {
             console.log('Using Pollinations.ai for image generation (Free Mode)...');
-            const encodedPrompt = encodeURIComponent(`${finalPrompt}, ${style}, high quality, 8k`);
+            const encodedPrompt = encodeURIComponent(`${finalPrompt}, ${style || 'Realistic'}, high quality, 8k`);
             imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?nologo=true&private=true`;
         }
 
@@ -126,14 +155,14 @@ exports.createImage = async (req, res) => {
             enhancedPrompt: finalPrompt,
             aiResponse: aiData.caption,
             negativePrompt,
-            style,
+            style: style || 'Realistic',
             imageUrl: imageUrl,
         };
 
         if (userId) {
             console.log('Saving to DB for user:', userId);
             newPromptData.user = userId;
-            
+
             let convId = conversationId;
             if (!convId) {
                 console.log('Creating new conversation...');
@@ -147,19 +176,168 @@ exports.createImage = async (req, res) => {
             } else {
                 await Conversation.findByIdAndUpdate(convId, { updatedAt: Date.now() });
             }
-            
+
             newPromptData.conversation = convId;
             const newPrompt = new Prompt(newPromptData);
             await newPrompt.save();
             console.log('Prompt saved successfully');
-            res.status(201).json({ success: true, data: newPrompt, conversationId: convId });
+            res.status(201).json({ success: true, data: newPrompt, conversationId: convId, credits: updatedUser.credits });
         } else {
             console.log('No userId found, not saving to DB');
-            res.status(201).json({ success: true, data: newPromptData });
+            res.status(201).json({ success: true, data: newPromptData, credits: updatedUser.credits });
         }
     } catch (error) {
         console.error('Error creating image:', error.message);
         res.status(500).json({ success: false, error: 'Server Error', details: error.message });
+    }
+};
+
+exports.editImage = async (req, res) => {
+    try {
+        const { prompt, style, conversationId } = req.body;
+        const userId = req.user?.id;
+        const uploadedImage = req.file;
+        let debitedUser = null;
+
+        if (!userId) {
+            return res.status(401).json({ success: false, message: 'Login required to use credits' });
+        }
+
+        if (!prompt) {
+            return res.status(400).json({ success: false, message: 'Prompt is required' });
+        }
+
+        if (!uploadedImage) {
+            return res.status(400).json({ success: false, message: 'Image file is required' });
+        }
+
+        if (!process.env.GEMINI_API_KEY) {
+            return res.status(500).json({ success: false, message: 'GEMINI_API_KEY is missing' });
+        }
+
+        const creditCheck = await ensureCredits(userId, 50);
+        if (!creditCheck) {
+            return res.status(402).json({ success: false, message: 'Insufficient credits' });
+        }
+
+        debitedUser = await debitCredits(userId, 50);
+        if (!debitedUser) {
+            return res.status(402).json({ success: false, message: 'Insufficient credits' });
+        }
+
+        const client = getGeminiClient();
+        const imagePart = {
+            inlineData: {
+                data: uploadedImage.buffer.toString('base64'),
+                mimeType: uploadedImage.mimetype,
+            },
+        };
+
+        const editPrompt = `
+      You are an expert AI image editor. You are given an input image and a user instruction.
+      User instruction: "${prompt}"
+      Style: "${style || 'Realistic'}"
+
+      Task 1: Describe the key elements of the image in one short sentence.
+      Task 2: Produce a concise, detailed text-to-image prompt (max 200 chars) that applies the user's requested changes while preserving the core scene.
+
+      Return ONLY a JSON object like this:
+      {
+        "enhancedPrompt": "...",
+        "caption": "..."
+      }
+    `;
+
+        const analysisResponse = await client.models.generateContent({
+            model: "gemini-2.0-flash",
+            contents: [
+                {
+                    role: "user",
+                    parts: [{ text: editPrompt }, imagePart],
+                },
+            ],
+        });
+
+        const textPart = analysisResponse.candidates?.[0]?.content?.parts?.find((part) => part.text);
+        const text = textPart?.text || '';
+
+        let aiData;
+        try {
+            const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            aiData = JSON.parse(cleanText);
+        } catch (e) {
+            aiData = { enhancedPrompt: prompt, caption: "Generated by AI" };
+        }
+
+        const finalPrompt = aiData.enhancedPrompt || prompt;
+        let imageUrl;
+
+        try {
+            const imageResponse = await client.models.generateContent({
+                model: "gemini-2.5-flash-image",
+                contents: `${finalPrompt}, ${style || 'Realistic'}, high quality, 8k`,
+            });
+
+            const imagePart = imageResponse.candidates?.[0]?.content?.parts?.find((part) => part.inlineData);
+
+            if (imagePart?.inlineData) {
+                imageUrl = `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`;
+            } else {
+                throw new Error('No image data returned from Gemini');
+            }
+        } catch (err) {
+            console.error('Gemini edit generation failed, falling back to Pollinations:', err.message);
+            const encodedPrompt = encodeURIComponent(`${finalPrompt}, ${style || 'Realistic'}, high quality, 8k`);
+            imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?nologo=true&private=true`;
+        }
+
+        const newPromptData = {
+            prompt,
+            enhancedPrompt: finalPrompt,
+            aiResponse: aiData.caption,
+            style: style || 'Realistic',
+            imageUrl,
+        };
+
+        if (userId) {
+            let convId = conversationId;
+            if (!convId) {
+                const newConv = new Conversation({
+                    title: prompt.substring(0, 30) + (prompt.length > 30 ? '...' : ''),
+                    user: userId,
+                });
+                const savedConv = await newConv.save();
+                convId = savedConv._id;
+            } else {
+                await Conversation.findByIdAndUpdate(convId, { updatedAt: Date.now() });
+            }
+
+            newPromptData.user = userId;
+            newPromptData.conversation = convId;
+            const newPrompt = new Prompt(newPromptData);
+            await newPrompt.save();
+            return res.status(201).json({ success: true, data: newPrompt, conversationId: convId, credits: debitedUser.credits });
+        }
+
+        return res.status(201).json({ success: true, data: newPromptData, credits: debitedUser.credits });
+    } catch (error) {
+        console.error('Error editing image:', error.message);
+        if (req.user?.id) {
+            try {
+                const refunded = await refundCredits(req.user.id, 50);
+                if (refunded) {
+                    return res.status(500).json({
+                        success: false,
+                        error: 'Server Error',
+                        details: error.message,
+                        credits: refunded.credits
+                    });
+                }
+            } catch (refundError) {
+                console.error('Failed to refund credits:', refundError.message);
+            }
+        }
+        return res.status(500).json({ success: false, error: 'Server Error', details: error.message });
     }
 };
 
@@ -180,27 +358,36 @@ exports.generateText = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Prompt is required' });
         }
 
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(401).json({ success: false, message: 'Login required to use credits' });
+        }
+
+        const updatedUser = await debitCredits(userId, 50);
+        if (!updatedUser) {
+            return res.status(402).json({ success: false, message: 'Insufficient credits' });
+        }
+
         let text;
-        if (process.env.GROQ_API_KEY) {
+        if (process.env.GEMINI_API_KEY) {
             try {
-                console.log('Generating text with Groq SDK...');
-                const client = getGroqClient();
-                const chatCompletion = await client.chat.completions.create({
-                    messages: [
-                        {
-                            role: 'system',
-                            content: `Act as a creative assistant. Style: "${style || 'Realistic'}". Write a concise, vivid 2-3 sentence response describing the scene.`
-                        },
-                        {
-                            role: 'user',
-                            content: prompt
-                        }
-                    ],
-                    model: 'llama3-70b-8192',
+                console.log('Generating text with Gemini...');
+                const client = getGeminiClient();
+
+                const textPrompt = `Act as a creative assistant. Style: "${style || 'Realistic'}".
+User request: "${prompt}"
+
+Write a concise, vivid 2-3 sentence response describing the scene or answering the request.`;
+
+                const textResponse = await client.models.generateContent({
+                    model: "gemini-2.0-flash",
+                    contents: textPrompt,
                 });
-                text = chatCompletion.choices[0].message.content;
+
+                const textPart = textResponse.candidates?.[0]?.content?.parts?.find(part => part.text);
+                text = textPart?.text || 'Generated by AI';
             } catch (err) {
-                console.error('Groq text generation failed, falling back to Pollinations:', err.message);
+                console.error('Gemini text generation failed, falling back to Pollinations:', err.message);
                 const pollResponse = await axios.get(`https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=openai`);
                 text = pollResponse.data;
             }
@@ -216,11 +403,10 @@ exports.generateText = async (req, res) => {
             style: style || 'Realistic',
         };
 
-        const userId = req.user?.id;
         if (userId) {
             console.log('Saving text to DB for user:', userId);
             newPromptData.user = userId;
-            
+
             let convId = conversationId;
             if (!convId) {
                 console.log('Creating new conversation for text...');
@@ -239,10 +425,10 @@ exports.generateText = async (req, res) => {
             const newPrompt = new Prompt(newPromptData);
             await newPrompt.save();
             console.log('Text prompt saved successfully');
-            res.status(200).json({ success: true, data: newPrompt, conversationId: convId });
+            res.status(200).json({ success: true, data: newPrompt, conversationId: convId, credits: updatedUser.credits });
         } else {
             console.log('No user found for text, not saving to DB');
-            res.status(200).json({ success: true, data: { prompt, aiResponse: text.trim() } });
+            res.status(200).json({ success: true, data: { prompt, aiResponse: text.trim() }, credits: updatedUser.credits });
         }
     } catch (error) {
         console.error('Error generating text:', error.message);

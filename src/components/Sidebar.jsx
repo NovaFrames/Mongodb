@@ -1,146 +1,168 @@
 import React from 'react';
+import {
+    Box,
+    Drawer,
+    List,
+    ListItem,
+    ListItemButton,
+    ListItemIcon,
+    ListItemText,
+    Toolbar,
+    Divider,
+    Typography
+} from '@mui/material';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import PersonIcon from '@mui/icons-material/Person';
+import SettingsIcon from '@mui/icons-material/Settings';
+import SupportIcon from '@mui/icons-material/SupportAgent';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import StorageIcon from '@mui/icons-material/Storage';
+import AppsIcon from '@mui/icons-material/Apps';
+import DesignServicesIcon from '@mui/icons-material/DesignServices';
+import ThreeDRotationIcon from '@mui/icons-material/ThreeDRotation';
+import ViewQuiltIcon from '@mui/icons-material/ViewQuilt';
+import MapIcon from '@mui/icons-material/Map';
+import RuleIcon from '@mui/icons-material/Rule';
+import MovieIcon from '@mui/icons-material/Movie';
+import LogoutIcon from '@mui/icons-material/Logout';
+import Avatar from '@mui/material/Avatar';
 
-const Sidebar = ({ conversations, onSelectConversation, activeConversationId, onNewChat, isOpen, onToggle }) => {
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+
+const drawerWidth = 260;
+
+const Sidebar = ({ setIsLoggedIn }) => {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const username = localStorage.getItem('username') || 'N';
+    const userInitial = username.charAt(0).toUpperCase();
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('username');
+        localStorage.removeItem('credits');
+        if (setIsLoggedIn) setIsLoggedIn(false);
+        navigate('/login');
+    };
+
+    const menuItems = [
+        { text: 'Projects', icon: <AssignmentIcon />, path: '/projects' },
+        { text: 'MOT', icon: <StorageIcon />, path: '/mot' },
+        { text: 'Apps Library', icon: <AppsIcon />, path: '/' },
+        { text: 'Design Tool', icon: <DesignServicesIcon />, path: '/design-tool' },
+        { text: '2D to 3D', icon: <ThreeDRotationIcon />, path: '/2d-to-3d' },
+        { text: 'Elevation & Sections', icon: <ViewQuiltIcon />, path: '/elevation' },
+        { text: 'Vacant Land', icon: <MapIcon />, path: '/land' },
+        { text: 'Code Check', icon: <RuleIcon />, path: '/code-check' },
+        { text: '3D Video', icon: <MovieIcon />, path: '/3d-video' },
+    ];
+
     return (
-        <>
-            {/* Mobile Toggle Button (Visible when sidebar is closed) */}
-            {!isOpen && (
-                <button
-                    onClick={onToggle}
-                    style={{
-                        position: 'fixed',
-                        left: '20px',
-                        top: '20px',
-                        zIndex: 1100,
-                        width: '44px',
-                        height: '44px',
-                        borderRadius: '12px',
-                        background: 'var(--glass)',
-                        backdropFilter: 'blur(10px)',
-                        border: '1px solid var(--glass-border)',
-                        color: 'white',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '20px',
-                        transition: 'var(--transition)'
-                    }}
-                >
-                    ☰
-                </button>
-            )}
-
-            <div style={{
-                width: 'var(--sidebar-width)',
-                height: '100vh',
-                background: 'rgba(10, 10, 10, 0.95)',
-                backdropFilter: 'blur(20px)',
-                borderRight: '1px solid var(--glass-border)',
-                display: 'flex',
-                flexDirection: 'column',
-                position: 'fixed',
-                left: isOpen ? '0' : 'calc(-1 * var(--sidebar-width))',
-                top: 0,
-                zIndex: 1000,
-                padding: '100px 16px 24px', // Increased top padding for navbar
-                transition: 'var(--transition)',
-                boxShadow: isOpen ? '20px 0 50px rgba(0,0,0,0.5)' : 'none'
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
-                    <div style={{ fontSize: '1.2rem', fontWeight: '800', letterSpacing: '-0.5px' }}>
-                        <span className="accent-gradient">Nova</span>
-                    </div>
-                    <button
-                        onClick={onToggle}
-                        style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: 'var(--text-muted)',
-                            cursor: 'pointer',
-                            fontSize: '20px'
-                        }}
-                    >
-                        ✕
-                    </button>
-                </div>
-
-                <button
-                    onClick={onNewChat}
-                    className="btn-primary"
-                    style={{
-                        marginBottom: '32px',
-                        width: '100%',
-                        padding: '14px',
-                        borderRadius: 'var(--radius-lg)',
-                        fontSize: '0.9rem',
-                        letterSpacing: '0.5px'
-                    }}
-                >
-                    <span style={{ fontSize: '18px' }}>+</span> New Chat
-                </button>
-
-                <div style={{
-                    flex: 1,
-                    overflowY: 'auto',
+        <Drawer
+            variant="permanent"
+            sx={{
+                width: drawerWidth,
+                flexShrink: 0,
+                [`& .MuiDrawer-paper`]: {
+                    width: drawerWidth,
+                    boxSizing: 'border-box',
+                    borderRight: '1px solid rgba(255,255,255,0.05)',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '8px',
-                    paddingRight: '4px'
+                    p: 2
+                },
+            }}
+        >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 4, mt: 1, px: 2 }}>
+                <Box sx={{
+                    width: 32,
+                    height: 32,
+                    bgcolor: 'primary.main',
+                    borderRadius: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                 }}>
-                    <h3 style={{
-                        fontSize: '0.7rem',
-                        color: 'var(--text-muted)',
-                        textTransform: 'uppercase',
-                        letterSpacing: '1.5px',
-                        padding: '0 12px',
-                        marginBottom: '8px',
-                        fontWeight: '700'
-                    }}>Recent Chats</h3>
+                    <Typography sx={{ fontWeight: 900, color: 'black', fontSize: '1.2rem' }}>A</Typography>
+                </Box>
+                <Typography variant="h6" sx={{ fontWeight: 900, letterSpacing: '2px', color: 'primary.main', fontSize: '1.1rem' }}>
+                    ARCONE
+                </Typography>
+            </Box>
 
-                    {conversations.map((conv) => (
-                        <div
-                            key={conv._id}
-                            onClick={() => onSelectConversation(conv._id)}
-                            className="glass-panel"
-                            style={{
-                                padding: '12px 16px',
-                                borderRadius: 'var(--radius-md)',
-                                cursor: 'pointer',
-                                background: activeConversationId === conv._id ? 'var(--glass-hover)' : 'transparent',
-                                border: activeConversationId === conv._id ? '1px solid var(--glass-border)' : '1px solid transparent',
-                                color: activeConversationId === conv._id ? 'var(--text-main)' : 'var(--text-muted)',
-                                fontSize: '0.9rem',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                transition: 'var(--transition)'
+            <List sx={{ flexGrow: 1, px: 0 }}>
+                {menuItems.map((item) => (
+                    <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+                        <ListItemButton
+                            component={NavLink}
+                            to={item.path}
+                            sx={{
+                                borderRadius: 2,
+                                py: 1.5,
+                                '&.active': {
+                                    bgcolor: 'rgba(234, 179, 8, 0.15)',
+                                    color: 'primary.main',
+                                    '& .MuiListItemIcon-root': {
+                                        color: 'primary.main',
+                                    },
+                                },
+                                '&:hover': {
+                                    bgcolor: 'rgba(255, 255, 255, 0.03)',
+                                },
                             }}
                         >
-                            {conv.title}
-                        </div>
-                    ))}
+                            <ListItemIcon sx={{ minWidth: 40, color: 'text.secondary' }}>
+                                {item.icon}
+                            </ListItemIcon>
+                            <ListItemText
+                                primary={item.text}
+                                primaryTypographyProps={{
+                                    fontWeight: 600,
+                                    fontSize: '0.85rem'
+                                }}
+                            />
+                        </ListItemButton>
+                    </ListItem>
+                ))}
+            </List>
 
-                    {conversations.length === 0 && (
-                        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>
-                            No recent chats
-                        </div>
-                    )}
-                </div>
+            <Divider sx={{ my: 2, borderColor: 'rgba(255,255,255,0.05)' }} />
 
-                <div style={{
-                    padding: '20px 10px 0',
-                    borderTop: '1px solid var(--glass-border)',
-                    marginTop: '20px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px'
-                }}>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-main)', fontWeight: '600' }}>NovaPrompt AI</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>v1.2.0 • Pro Plan</div>
-                </div>
-            </div>
-        </>
+            <Box sx={{ px: 2, pb: 2 }}>
+                <ListItemButton
+                    onClick={handleLogout}
+                    sx={{
+                        borderRadius: 2,
+                        py: 1.5,
+                        '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.03)' }
+                    }}
+                >
+                    <ListItemIcon sx={{ minWidth: 40 }}>
+                        <Avatar
+                            sx={{
+                                width: 28,
+                                height: 28,
+                                bgcolor: 'transparent',
+                                border: '1px solid',
+                                borderColor: 'text.secondary',
+                                fontSize: '0.8rem',
+                                color: 'text.secondary'
+                            }}
+                        >
+                            {userInitial}
+                        </Avatar>
+                    </ListItemIcon>
+                    <ListItemText
+                        primary="Sign Out"
+                        primaryTypographyProps={{
+                            fontWeight: 600,
+                            fontSize: '0.85rem',
+                            color: 'text.secondary'
+                        }}
+                    />
+                </ListItemButton>
+            </Box>
+        </Drawer>
     );
 };
 
